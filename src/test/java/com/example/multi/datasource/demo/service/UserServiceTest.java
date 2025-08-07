@@ -5,7 +5,6 @@ import com.example.multi.datasource.demo.entity.User;
 import com.example.multi.datasource.demo.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 

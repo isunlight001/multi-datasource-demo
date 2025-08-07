@@ -5,7 +5,6 @@ import com.example.multi.datasource.demo.entity.User;
 import com.example.multi.datasource.demo.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -43,7 +42,8 @@ public class UnifiedDataSourceControllerTest {
     public void testListDataSources() throws Exception {
         mockMvc.perform(get("/api/datasource/list")
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     @Test
