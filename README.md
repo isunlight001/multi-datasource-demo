@@ -4,20 +4,18 @@
 
 ## 项目概述
 
-本项目演示了在 Spring Boot 应用中实现动态数据源管理的功能。与传统的静态多数据源配置不同，本项目支持在运行时动态添加、删除和切换数据源，无需修改代码或重启应用。
+本项目演示了在 Spring Boot 应用中实现动态数据源管理的功能。项目完全基于动态数据源配置，支持在运行时动态添加、删除和切换数据源，无需修改代码或重启应用。
 
 ## 核心功能
 
-### 1. 动态数据源管理
+### 动态数据源管理
 - **动态添加数据源**：可在运行时通过API添加新的数据源
 - **动态删除数据源**：可删除不再需要的数据源
 - **动态切换数据源**：可在不同数据源之间自由切换
 - **数据源列表查询**：可查看当前所有可用的数据源
 
-### 2. 数据操作功能
-- **静态数据源操作**：保留原有的10个静态数据源操作接口
+### 数据操作功能
 - **动态数据源操作**：支持在任意动态添加的数据源上进行数据操作
-- **统一数据源操作**：通过索引方式操作预配置的静态数据源
 
 ## 技术架构
 
@@ -50,11 +48,24 @@ mvn spring-boot:run
 
 ## API 接口
 
-项目提供多种方式操作数据源：
+项目提供以下API接口：
 
-1. **统一动态数据源管理接口**：`/api/datasource/*`
-2. **静态数据源操作（通过索引）**：`/users/ds/{index}`
-3. **静态数据源操作（原有接口）**：`/users/ds1` 到 `/users/ds10`
+1. **动态数据源管理接口**：
+   - `POST /api/datasource/add` - 添加数据源
+   - `DELETE /api/datasource/remove` - 删除数据源
+   - `POST /api/datasource/switch` - 切换数据源
+   - `GET /api/datasource/list` - 查询所有数据源
+
+2. **数据操作接口**：
+   - `POST /api/datasource/{dsName}/users` - 在指定数据源中添加用户
+   - `GET /api/datasource/{dsName}/users` - 从指定数据源中查询所有用户
+   - `GET /api/datasource/{dsName}/users/{id}` - 从指定数据源中根据ID查询用户
+   - `PUT /api/datasource/{dsName}/users/{id}` - 在指定数据源中更新用户
+   - `DELETE /api/datasource/{dsName}/users/{id}` - 在指定数据源中删除用户
+
+3. **简化数据操作接口**：
+   - `POST /users/dynamic/{dsName}` - 在指定数据源中添加用户
+   - `GET /users/dynamic/{dsName}` - 从指定数据源中查询所有用户
 
 详细接口说明请参考 [DATASOURCE_GUIDE.md](DATASOURCE_GUIDE.md) 文件。
 

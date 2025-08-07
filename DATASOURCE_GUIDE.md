@@ -2,20 +2,18 @@
 
 ## 项目概述
 
-本项目演示了在Spring Boot应用中实现动态数据源管理的功能。与传统的静态多数据源配置不同，本项目支持在运行时动态添加、删除和切换数据源，无需修改代码或重启应用。
+本项目演示了在Spring Boot应用中实现动态数据源管理的功能。项目完全基于动态数据源配置，支持在运行时动态添加、删除和切换数据源，无需修改代码或重启应用。
 
 ## 核心功能
 
-### 1. 动态数据源管理
+### 动态数据源管理
 - **动态添加数据源**：可在运行时通过API添加新的数据源
 - **动态删除数据源**：可删除不再需要的数据源
 - **动态切换数据源**：可在不同数据源之间自由切换
 - **数据源列表查询**：可查看当前所有可用的数据源
 
-### 2. 数据操作功能
-- **静态数据源操作**：保留原有的10个静态数据源操作接口
+### 数据操作功能
 - **动态数据源操作**：支持在任意动态添加的数据源上进行数据操作
-- **统一数据源操作**：通过索引方式操作预配置的静态数据源
 
 ## API 接口说明
 
@@ -92,23 +90,16 @@ GET /api/datasource/list
 
 ### 数据操作接口
 
-#### 1. 静态数据源操作（通过索引）
-- `POST /users/ds/{index}` - 在指定索引的静态数据源中添加用户
-- `GET /users/ds/{index}` - 从指定索引的静态数据源中查询用户
-
-其中 index 为 1-10，对应 dataSource1 到 dataSource10。
-
-#### 2. 静态数据源操作（原有接口）
-保留了原有的10个静态数据源操作接口：
-- `POST /users/ds1` 到 `POST /users/ds10` - 在指定静态数据源中添加用户
-- `GET /users/ds1` 到 `GET /users/ds10` - 从指定静态数据源中查询用户
-
-#### 3. 动态数据源操作（统一接口）
+#### 1. 动态数据源操作（统一接口）
 - `POST /api/datasource/{dsName}/users` - 在指定动态数据源中添加用户
 - `GET /api/datasource/{dsName}/users` - 从指定动态数据源中查询所有用户
 - `GET /api/datasource/{dsName}/users/{id}` - 从指定动态数据源中根据ID查询用户
 - `PUT /api/datasource/{dsName}/users/{id}` - 在指定动态数据源中更新用户
 - `DELETE /api/datasource/{dsName}/users/{id}` - 在指定动态数据源中删除用户
+
+#### 2. 简化数据操作接口
+- `POST /users/dynamic/{dsName}` - 在指定动态数据源中添加用户
+- `GET /users/dynamic/{dsName}` - 从指定动态数据源中查询所有用户
 
 ## 使用示例
 
@@ -137,18 +128,18 @@ curl -X POST "http://localhost:8081/api/datasource/mydb/users" \
 curl -X GET "http://localhost:8081/api/datasource/mydb/users"
 ```
 
-### 2. 使用统一接口操作静态数据源
+### 2. 使用简化接口操作数据
 
-1. **在数据源1中添加用户**
+1. **在数据源中添加用户**
 ```bash
-curl -X POST "http://localhost:8081/users/ds/1" \
+curl -X POST "http://localhost:8081/users/dynamic/mydb" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Unified Tom", "email":"unified.tom@example.com"}'
+  -d '{"name":"Jerry", "email":"jerry@example.com"}'
 ```
 
-2. **从数据源1中查询用户**
+2. **从数据源中查询用户**
 ```bash
-curl -X GET "http://localhost:8081/users/ds/1"
+curl -X GET "http://localhost:8081/users/dynamic/mydb"
 ```
 
 ### 3. 删除数据源
@@ -164,28 +155,21 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 - 通过 `ThreadLocal` 实现数据源切换的线程安全性
 - 支持运行时动态添加和删除数据源
 
-### 2. 静态数据源统一管理
-- 通过数组方式配置预定义的静态数据源
-- 提供统一接口通过索引操作不同的静态数据源
-- 保留原有接口以确保向后兼容性
-
-### 3. 数据源配置
+### 2. 数据源配置
 - 使用 Druid 作为数据库连接池
 - 支持通过API参数动态配置数据源连接属性
 - 每个数据源可独立配置连接池参数
 
-### 4. 线程安全
+### 3. 线程安全
 - 使用 `ThreadLocal` 确保数据源切换的线程安全性
 - 每个请求可以在自己的线程上下文中切换数据源
 
 ## 优势特点
 
 1. **完全动态**：支持在运行时动态添加、删除和切换任意数量的数据源
-2. **统一接口**：提供通过索引操作静态数据源的统一接口
-3. **无需代码修改**：添加或删除数据源时不需要修改任何代码
-4. **灵活配置**：可以为每个数据源单独配置连接池参数
-5. **向后兼容**：保留了原有的静态数据源操作方式
-6. **易于测试**：提供完整的HTTP测试脚本和单元测试
+2. **无需代码修改**：添加或删除数据源时不需要修改任何代码
+3. **灵活配置**：可以为每个数据源单独配置连接池参数
+4. **易于测试**：提供完整的HTTP测试脚本和单元测试
 
 ## 注意事项
 

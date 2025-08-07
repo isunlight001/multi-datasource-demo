@@ -15,12 +15,8 @@ public class DataInitializer implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        // 初始化数据到第一个数据源
-        DynamicDataSource.setContext(DataSourceEnum.DATASOURCE1.getName());
-        userRepository.save(new User("Alice", "alice@example.com"));
-        userRepository.save(new User("Bob", "bob@example.com"));
-        DynamicDataSource.clearContext();
-        
-        System.out.println("Data initialized successfully!");
+        // 由于我们现在使用完全动态的数据源，这里不初始化任何数据
+        // 数据源和数据将在运行时通过API动态添加
+        System.out.println("Dynamic datasource demo application started. Use REST APIs to add datasources and data.");
     }
 }

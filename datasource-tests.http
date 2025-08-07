@@ -94,63 +94,29 @@ Content-Type: application/json
 
 ###
 
-## 10. 在默认数据源中添加用户
-POST http://localhost:8081/api/datasource/dataSource1/users
-Content-Type: application/json
-
-{
-  "name": "Alice",
-  "email": "alice@example.com"
-}
-
-###
-
-## 11. 在默认数据源中查询所有用户
-GET http://localhost:8081/api/datasource/dataSource1/users
-Content-Type: application/json
-
-###
-
-## 12. 删除数据源 db4
+## 10. 删除数据源 db4
 DELETE http://localhost:8081/api/datasource/remove?dsName=db4
 Content-Type: application/json
 
 ###
 
-## 13. 再次查看所有数据源，确认 db4 已被删除
+## 11. 再次查看所有数据源，确认 db4 已被删除
 GET http://localhost:8081/api/datasource/list
 Content-Type: application/json
 
 ###
 
-## 14. 使用新的统一方法在数据源1中添加用户
-POST http://localhost:8081/users/ds/1
+## 12. 使用简化接口在数据源db2中添加用户
+POST http://localhost:8081/users/dynamic/db2
 Content-Type: application/json
 
 {
-  "name": "Unified Tom",
-  "email": "unified.tom@example.com"
+  "name": "Simplified Tom",
+  "email": "simplified.tom@example.com"
 }
 
 ###
 
-## 15. 使用新的统一方法在数据源2中添加用户
-POST http://localhost:8081/users/ds/2
-Content-Type: application/json
-
-{
-  "name": "Unified Jerry",
-  "email": "unified.jerry@example.com"
-}
-
-###
-
-## 16. 使用新的统一方法从数据源1中获取用户
-GET http://localhost:8081/users/ds/1
-Content-Type: application/json
-
-###
-
-## 17. 使用新的统一方法从数据源2中获取用户
-GET http://localhost:8081/users/ds/2
+## 13. 使用简化接口从数据源db2中获取用户
+GET http://localhost:8081/users/dynamic/db2
 Content-Type: application/json
