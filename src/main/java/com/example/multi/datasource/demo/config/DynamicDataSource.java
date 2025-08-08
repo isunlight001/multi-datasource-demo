@@ -71,10 +71,10 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      */
     public void addTargetDataSource(String key, DataSource dataSource) {
         dynamicDataSources.put(key, dataSource);
-        // 更新resolvedDataSources
-        if (getResolvedDataSources() != null) {
-            getResolvedDataSources().put(key, dataSource);
-        }
+        // 重新设置目标数据源
+        super.setTargetDataSources(new ConcurrentHashMap<>(dynamicDataSources));
+        // 重新初始化数据源
+        super.afterPropertiesSet();
     }
     
     /**
@@ -83,10 +83,10 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      */
     public void removeTargetDataSource(String key) {
         dynamicDataSources.remove(key);
-        // 更新resolvedDataSources
-        if (getResolvedDataSources() != null) {
-            getResolvedDataSources().remove(key);
-        }
+        // 重新设置目标数据源
+        super.setTargetDataSources(new ConcurrentHashMap<>(dynamicDataSources));
+        // 重新初始化数据源
+        super.afterPropertiesSet();
     }
     
     /**
