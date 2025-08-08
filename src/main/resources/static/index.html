@@ -402,14 +402,37 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const select = document.getElementById('dataSourceList');
-                    select.innerHTML = '';
+                    // 获取所有需要更新的下拉列表元素
+                    const dataSourceList = document.getElementById('dataSourceList');
+                    const redisDsName = document.getElementById('redisDsName');
+                    const userDsName = document.getElementById('userDsName');
+                    const queryUserDsName = document.getElementById('queryUserDsName');
+                    const redisOpDsName = document.getElementById('redisOpDsName');
+                    const tableDsName = document.getElementById('tableDsName');
+                    const tableListDsName = document.getElementById('tableListDsName');
                     
+                    // 清空现有选项
+                    dataSourceList.innerHTML = '';
+                    redisDsName.innerHTML = '';
+                    userDsName.innerHTML = '';
+                    queryUserDsName.innerHTML = '';
+                    redisOpDsName.innerHTML = '';
+                    tableDsName.innerHTML = '';
+                    tableListDsName.innerHTML = '';
+                    
+                    // 添加新选项
                     data.dataSources.forEach(dsName => {
                         const option = document.createElement('option');
                         option.value = dsName;
                         option.textContent = dsName;
-                        select.appendChild(option);
+                        
+                        dataSourceList.appendChild(option.cloneNode(true));
+                        redisDsName.appendChild(option.cloneNode(true));
+                        userDsName.appendChild(option.cloneNode(true));
+                        queryUserDsName.appendChild(option.cloneNode(true));
+                        redisOpDsName.appendChild(option.cloneNode(true));
+                        tableDsName.appendChild(option.cloneNode(true));
+                        tableListDsName.appendChild(option.cloneNode(true));
                     });
                 } else {
                     showResult('dataSourceOperationResult', false, data.message);
