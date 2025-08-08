@@ -1,13 +1,13 @@
 # 动态数据源统一接口测试脚本
 
 ## 1. 查看当前所有数据源
-GET http://localhost:8080/api/datasource/list
+GET http://localhost:8081/api/datasource/list
 Content-Type: application/json
 
 ###
 
 ## 2. 添加新的数据源 db2
-POST http://localhost:8080/api/datasource/add
+POST http://localhost:8081/api/datasource/add
 Content-Type: application/x-www-form-urlencoded
 
 dsName=db2
@@ -23,7 +23,7 @@ dsName=db2
 ###
 
 ## 3. 添加新的数据源 db3
-POST http://localhost:8080/api/datasource/add
+POST http://localhost:8081/api/datasource/add
 Content-Type: application/x-www-form-urlencoded
 
 dsName=db3
@@ -38,30 +38,14 @@ dsName=db3
 
 ###
 
-## 4. 添加新的数据源 db4
-POST http://localhost:8080/api/datasource/add
-Content-Type: application/x-www-form-urlencoded
-
-dsName=db4
-&url=jdbc:h2:mem:db4
-&username=sa
-&password=
-&driverClassName=org.h2.Driver
-&initialSize=5
-&minIdle=5
-&maxActive=20
-&maxWait=60000
-
-###
-
-## 5. 再次查看所有数据源
-GET http://localhost:8080/api/datasource/list
+## 4. 再次查看所有数据源
+GET http://localhost:8081/api/datasource/list
 Content-Type: application/json
 
 ###
 
-## 6. 在 db2 中添加用户
-POST http://localhost:8080/api/datasource/db2/users
+## 5. 在 db2 中添加用户
+POST http://localhost:8081/api/datasource/db2/users
 Content-Type: application/json
 
 {
@@ -71,14 +55,14 @@ Content-Type: application/json
 
 ###
 
-## 7. 在 db2 中查询所有用户
-GET http://localhost:8080/api/datasource/db2/users
+## 6. 在 db2 中查询所有用户
+GET http://localhost:8081/api/datasource/db2/users
 Content-Type: application/json
 
 ###
 
-## 8. 在 db3 中添加用户
-POST http://localhost:8080/api/datasource/db3/users
+## 7. 在 db3 中添加用户
+POST http://localhost:8081/api/datasource/db3/users
 Content-Type: application/json
 
 {
@@ -88,26 +72,65 @@ Content-Type: application/json
 
 ###
 
-## 9. 在 db3 中查询所有用户
-GET http://localhost:8080/api/datasource/db3/users
+## 8. 在 db3 中查询所有用户
+GET http://localhost:8081/api/datasource/db3/users
 Content-Type: application/json
 
 ###
 
-## 10. 删除数据源 db4
-DELETE http://localhost:8080/api/datasource/remove?dsName=db4
+## 9. 在默认数据源中添加用户
+POST http://localhost:8081/api/datasource/dataSource1/users
+Content-Type: application/json
+
+{
+  "name": "Alice",
+  "email": "alice@example.com"
+}
+
+###
+
+## 10. 在默认数据源中查询所有用户
+GET http://localhost:8081/api/datasource/dataSource1/users
 Content-Type: application/json
 
 ###
 
-## 11. 再次查看所有数据源，确认 db4 已被删除
-GET http://localhost:8080/api/datasource/list
+## 11. 向所有数据源添加用户
+POST http://localhost:8081/api/datasource/all/users
+Content-Type: application/json
+
+{
+  "name": "All DataSources User",
+  "email": "all@example.com"
+}
+
+###
+
+## 12. 从所有数据源查询用户
+GET http://localhost:8081/api/datasource/all/users
 Content-Type: application/json
 
 ###
 
-## 12. 使用简化接口在数据源db2中添加用户
-POST http://localhost:8080/users/dynamic/db2
+## 13. 使用简化接口向所有数据源添加用户
+POST http://localhost:8081/users/all
+Content-Type: application/json
+
+{
+  "name": "All DS User via UserController",
+  "email": "all2@example.com"
+}
+
+###
+
+## 14. 使用简化接口从所有数据源查询用户
+GET http://localhost:8081/users/all
+Content-Type: application/json
+
+###
+
+## 15. 使用简化接口在指定数据源中添加用户
+POST http://localhost:8081/users/dynamic/db2
 Content-Type: application/json
 
 {
@@ -117,6 +140,6 @@ Content-Type: application/json
 
 ###
 
-## 13. 使用简化接口从数据源db2中获取用户
-GET http://localhost:8080/users/dynamic/db2
+## 16. 使用简化接口从指定数据源中获取用户
+GET http://localhost:8081/users/dynamic/db2
 Content-Type: application/json

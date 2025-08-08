@@ -16,6 +16,7 @@
 
 ### 数据操作功能
 - **动态数据源操作**：支持在任意动态添加的数据源上进行数据操作
+- **批量数据源操作**：支持向所有数据源同时添加数据或从所有数据源查询数据
 
 ## 技术架构
 
@@ -63,9 +64,15 @@ mvn spring-boot:run
    - `PUT /api/datasource/{dsName}/users/{id}` - 在指定数据源中更新用户
    - `DELETE /api/datasource/{dsName}/users/{id}` - 在指定数据源中删除用户
 
-3. **简化数据操作接口**：
+3. **批量数据操作接口**：
+   - `POST /api/datasource/all/users` - 向所有数据源中添加用户
+   - `GET /api/datasource/all/users` - 从所有数据源中查询所有用户
+
+4. **简化数据操作接口**：
    - `POST /users/dynamic/{dsName}` - 在指定数据源中添加用户
    - `GET /users/dynamic/{dsName}` - 从指定数据源中查询所有用户
+   - `POST /users/all` - 向所有数据源中添加用户
+   - `GET /users/all` - 从所有数据源中查询所有用户
 
 详细接口说明请参考 [DATASOURCE_GUIDE.md](DATASOURCE_GUIDE.md) 文件。
 

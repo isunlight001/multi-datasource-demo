@@ -14,6 +14,7 @@
 
 ### 数据操作功能
 - **动态数据源操作**：支持在任意动态添加的数据源上进行数据操作
+- **批量数据源操作**：支持向所有数据源同时添加数据或从所有数据源查询数据
 
 ## API 接口说明
 
@@ -97,9 +98,15 @@ GET /api/datasource/list
 - `PUT /api/datasource/{dsName}/users/{id}` - 在指定动态数据源中更新用户
 - `DELETE /api/datasource/{dsName}/users/{id}` - 在指定动态数据源中删除用户
 
-#### 2. 简化数据操作接口
+#### 2. 所有数据源操作（批量接口）
+- `POST /api/datasource/all/users` - 向所有数据源中添加用户
+- `GET /api/datasource/all/users` - 从所有数据源中查询所有用户
+
+#### 3. 简化数据操作接口
 - `POST /users/dynamic/{dsName}` - 在指定动态数据源中添加用户
 - `GET /users/dynamic/{dsName}` - 从指定动态数据源中查询所有用户
+- `POST /users/all` - 向所有数据源中添加用户
+- `GET /users/all` - 从所有数据源中查询所有用户
 
 ## 使用示例
 
@@ -142,7 +149,21 @@ curl -X POST "http://localhost:8081/users/dynamic/mydb" \
 curl -X GET "http://localhost:8081/users/dynamic/mydb"
 ```
 
-### 3. 删除数据源
+### 3. 向所有数据源添加数据
+
+1. **向所有数据源添加用户**
+```bash
+curl -X POST "http://localhost:8081/api/datasource/all/users" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"All DS User", "email":"all@example.com"}'
+```
+
+2. **从所有数据源查询用户**
+```bash
+curl -X GET "http://localhost:8081/api/datasource/all/users"
+```
+
+### 4. 删除数据源
 
 ```bash
 curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
@@ -167,9 +188,10 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 ## 优势特点
 
 1. **完全动态**：支持在运行时动态添加、删除和切换任意数量的数据源
-2. **无需代码修改**：添加或删除数据源时不需要修改任何代码
-3. **灵活配置**：可以为每个数据源单独配置连接池参数
-4. **易于测试**：提供完整的HTTP测试脚本和单元测试
+2. **批量操作**：支持向所有数据源同时添加数据或从所有数据源查询数据
+3. **无需代码修改**：添加或删除数据源时不需要修改任何代码
+4. **灵活配置**：可以为每个数据源单独配置连接池参数
+5. **易于测试**：提供完整的HTTP测试脚本和单元测试
 
 ## 注意事项
 

@@ -13,7 +13,7 @@ public class UserController {
 
     @Autowired
     private UserService userService;
-    
+
     // 新增动态数据源操作接口
     @PostMapping("/dynamic/{dsName}")
     public User saveToDynamicDataSource(@PathVariable String dsName, @RequestBody User user) {
@@ -23,5 +23,17 @@ public class UserController {
     @GetMapping("/dynamic/{dsName}")
     public List<User> getAllUsersFromDynamicDataSource(@PathVariable String dsName) {
         return userService.getAllUsersFromDynamicDataSource(dsName);
+    }
+    
+    // 向所有数据源添加数据
+    @PostMapping("/all")
+    public List<User> saveToAllDataSources(@RequestBody User user) {
+        return userService.saveToAllDataSources(user.getName(), user.getEmail());
+    }
+    
+    // 从所有数据源查询数据
+    @GetMapping("/all")
+    public List<User> getAllUsersFromAllDataSources() {
+        return userService.getAllUsersFromAllDataSources();
     }
 }

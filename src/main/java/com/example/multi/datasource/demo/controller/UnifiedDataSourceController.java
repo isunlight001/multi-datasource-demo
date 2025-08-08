@@ -163,6 +163,14 @@ public class UnifiedDataSourceController {
     public User addUser(@PathVariable String dsName, @RequestBody User user) {
         return userService.saveToDynamicDataSource(user.getName(), user.getEmail(), dsName);
     }
+    
+    /**
+     * 向所有数据源中添加用户
+     */
+    @PostMapping("/all/users")
+    public List<User> addUserToAllDataSources(@RequestBody User user) {
+        return userService.saveToAllDataSources(user.getName(), user.getEmail());
+    }
 
     /**
      * 从指定数据源中获取所有用户
@@ -170,6 +178,14 @@ public class UnifiedDataSourceController {
     @GetMapping("/{dsName}/users")
     public List<User> getUsers(@PathVariable String dsName) {
         return userService.getAllUsersFromDynamicDataSource(dsName);
+    }
+    
+    /**
+     * 从所有数据源中获取所有用户
+     */
+    @GetMapping("/all/users")
+    public List<User> getAllUsersFromAllDataSources() {
+        return userService.getAllUsersFromAllDataSources();
     }
 
     /**
