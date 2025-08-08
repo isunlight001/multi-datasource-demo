@@ -1,6 +1,8 @@
 package com.example.multi.datasource.demo.controller;
 
 import com.example.multi.datasource.demo.service.TableService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,6 +11,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/datasource")
 public class TableController {
+    
+    private static final Logger log = LoggerFactory.getLogger(TableController.class);
 
     @Autowired
     private TableService tableService;
@@ -26,6 +30,7 @@ public class TableController {
             @PathVariable String dataSourceName,
             @RequestParam String tableName,
             @RequestParam String sql) {
+        log.info("在数据源 {} 中创建表 {}, SQL: {}", dataSourceName, tableName, sql);
         return tableService.createTable(dataSourceName, tableName, sql);
     }
 
@@ -40,6 +45,7 @@ public class TableController {
     public Map<String, Object> dropTable(
             @PathVariable String dataSourceName,
             @RequestParam String tableName) {
+        log.info("在数据源 {} 中删除表 {}", dataSourceName, tableName);
         return tableService.dropTable(dataSourceName, tableName);
     }
 
@@ -51,6 +57,7 @@ public class TableController {
      */
     @GetMapping("/{dataSourceName}/table/list")
     public Map<String, Object> listTables(@PathVariable String dataSourceName) {
+        log.info("获取数据源 {} 中的所有表", dataSourceName);
         return tableService.listTables(dataSourceName);
     }
 }

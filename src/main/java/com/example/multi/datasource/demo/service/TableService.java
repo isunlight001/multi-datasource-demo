@@ -1,6 +1,8 @@
 package com.example.multi.datasource.demo.service;
 
 import com.example.multi.datasource.demo.config.DynamicDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ import java.util.Map;
 
 @Service
 public class TableService {
+    
+    private static final Logger log = LoggerFactory.getLogger(TableService.class);
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -28,6 +32,8 @@ public class TableService {
      * @return 操作结果
      */
     public Map<String, Object> createTable(String dataSourceName, String tableName, String sql) {
+        log.info("开始在数据源 {} 中创建表 {}", dataSourceName, tableName);
+        
         Map<String, Object> result = new HashMap<>();
 
         try {
@@ -35,6 +41,7 @@ public class TableService {
             DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
             Map<Object, DataSource> allDataSources = dynamicDataSource.getDynamicDataSources();
             if (!allDataSources.containsKey(dataSourceName)) {
+                log.warn("数据源 {} 不存在", dataSourceName);
                 result.put("success", false);
                 result.put("message", "数据源 " + dataSourceName + " 不存在");
                 return result;
@@ -46,6 +53,7 @@ public class TableService {
             try {
                 // 执行创建表的SQL语句
                 jdbcTemplate.execute(sql);
+                log.info("在数据源 {} 中创建表 {} 成功", dataSourceName, tableName);
                 result.put("success", true);
                 result.put("message", "在数据源 " + dataSourceName + " 中创建表 " + tableName + " 成功");
             } finally {
@@ -53,6 +61,7 @@ public class TableService {
                 DynamicDataSource.clearContext();
             }
         } catch (Exception e) {
+            log.error("在数据源 " + dataSourceName + " 中创建表 " + tableName + " 失败", e);
             result.put("success", false);
             result.put("message", "在数据源 " + dataSourceName + " 中创建表 " + tableName + " 失败: " + e.getMessage());
         }
@@ -67,6 +76,8 @@ public class TableService {
      * @return 操作结果
      */
     public Map<String, Object> dropTable(String dataSourceName, String tableName) {
+        log.info("开始在数据源 {} 中删除表 {}", dataSourceName, tableName);
+        
         Map<String, Object> result = new HashMap<>();
 
         try {
@@ -74,6 +85,7 @@ public class TableService {
             DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
             Map<Object, DataSource> allDataSources = dynamicDataSource.getDynamicDataSources();
             if (!allDataSources.containsKey(dataSourceName)) {
+                log.warn("数据源 {} 不存在", dataSourceName);
                 result.put("success", false);
                 result.put("message", "数据源 " + dataSourceName + " 不存在");
                 return result;
@@ -86,6 +98,7 @@ public class TableService {
                 // 执行删除表的SQL语句
                 String sql = "DROP TABLE " + tableName;
                 jdbcTemplate.execute(sql);
+                log.info("在数据源 {} 中删除表 {} 成功", dataSourceName, tableName);
                 result.put("success", true);
                 result.put("message", "在数据源 " + dataSourceName + " 中删除表 " + tableName + " 成功");
             } finally {
@@ -93,6 +106,7 @@ public class TableService {
                 DynamicDataSource.clearContext();
             }
         } catch (Exception e) {
+            log.error("在数据源 " + dataSourceName + " 中删除表 " + tableName + " 失败", e);
             result.put("success", false);
             result.put("message", "在数据源 " + dataSourceName + " 中删除表 " + tableName + " 失败: " + e.getMessage());
         }
@@ -106,6 +120,8 @@ public class TableService {
      * @return 表列表
      */
     public Map<String, Object> listTables(String dataSourceName) {
+        log.info("开始获取数据源 {} 中的所有表", dataSourceName);
+        
         Map<String, Object> result = new HashMap<>();
 
         try {
@@ -113,6 +129,7 @@ public class TableService {
             DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
             Map<Object, DataSource> allDataSources = dynamicDataSource.getDynamicDataSources();
             if (!allDataSources.containsKey(dataSourceName)) {
+                log.warn("数据源 {} 不存在", dataSourceName);
                 result.put("success", false);
                 result.put("message", "数据源 " + dataSourceName + " 不存在");
                 return result;
@@ -147,6 +164,7 @@ public class TableService {
                 rs.close();
                 connection.close();
                 
+                log.info("获取数据源 {} 中的表列表成功，共 {} 张表", dataSourceName, tables.size());
                 result.put("success", true);
                 result.put("tables", tables);
             } finally {
@@ -154,6 +172,7 @@ public class TableService {
                 DynamicDataSource.clearContext();
             }
         } catch (Exception e) {
+            log.error("获取数据源 " + dataSourceName + " 中的表列表失败", e);
             result.put("success", false);
             result.put("message", "获取数据源 " + dataSourceName + " 中的表列表失败: " + e.getMessage());
         }
@@ -169,8 +188,13 @@ public class TableService {
     private boolean isH2Database(Connection connection) {
         try {
             String url = connection.getMetaData().getURL();
-            return url.contains(":h2:");
+            boolean isH2 = url.contains(":h2:");
+            if (isH2) {
+                log.debug("检测到H2数据库: {}", url);
+            }
+            return isH2;
         } catch (SQLException e) {
+            log.warn("判断数据库类型时发生异常", e);
             return false;
         }
     }

@@ -1,5 +1,7 @@
 package com.example.multi.datasource.demo.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -11,25 +13,28 @@ import org.springframework.data.redis.serializer.GenericToStringSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 import javax.sql.DataSource;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DynamicDataSource extends AbstractRoutingDataSource implements ApplicationContextAware {
     
+    private static final Logger log = LoggerFactory.getLogger(DynamicDataSource.class);
     private static final ThreadLocal<String> CONTEXT_HOLDER = new ThreadLocal<>();
     
+    // 保存DynamicDataSource实例，用于动态添加数据源
     private static DynamicDataSource instance;
     
     private ApplicationContext applicationContext;
     
-    // 存储动态添加的数据源
-    private final Map<Object, DataSource> dynamicDataSources = new ConcurrentHashMap<>();
+    // 存储动态创建的数据源
+    private Map<Object, DataSource> dynamicDataSources = new ConcurrentHashMap<>();
     
-    // 存储动态添加的Redis连接工厂
-    private Map<String, LettuceConnectionFactory> dynamicRedisConnectionFactories;
+    // 存储动态创建的Redis连接工厂
+    private Map<String, LettuceConnectionFactory> dynamicRedisConnectionFactories = new ConcurrentHashMap<>();
     
-    // 存储动态添加的Redis模板
-    private Map<String, RedisTemplate<String, Object>> dynamicRedisTemplates;
+    // 存储动态创建的Redis模板
+    private Map<String, RedisTemplate<String, Object>> dynamicRedisTemplates = new ConcurrentHashMap<>();
     
     public DynamicDataSource() {
         instance = this;
@@ -52,14 +57,20 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
         return CONTEXT_HOLDER.get();
     }
     
-    public static void setContext(String dataSourceKey) {
-        CONTEXT_HOLDER.set(dataSourceKey);
+    public static void setContext(String dataSource) {
+        log.debug("设置数据源上下文: {}", dataSource);
+        CONTEXT_HOLDER.set(dataSource);
     }
     
     public static void clearContext() {
+        log.debug("清除数据源上下文");
         CONTEXT_HOLDER.remove();
     }
     
+    /**
+     * 获取DynamicDataSource实例
+     * @return DynamicDataSource实例
+     */
     public static DynamicDataSource getInstance() {
         return instance;
     }
@@ -69,24 +80,53 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      * @param key 数据源键
      * @param dataSource 数据源
      */
-    public void addTargetDataSource(String key, DataSource dataSource) {
+    /**
+     * 动态添加目标数据源
+     * @param key 数据源键
+     * @param dataSource 数据源
+     */
+    public synchronized void addTargetDataSource(String key, DataSource dataSource) {
+        log.info("添加目标数据源: {}", key);
+        
         dynamicDataSources.put(key, dataSource);
+        
+        // 更新resolvedDataSources
+        Map<Object, Object> targetDataSources = new HashMap<>(this.getResolvedDataSources());
+        targetDataSources.put(key, dataSource);
+        
         // 重新设置目标数据源
-        super.setTargetDataSources(new ConcurrentHashMap<>(dynamicDataSources));
+        this.setTargetDataSources(targetDataSources);
+        
         // 重新初始化数据源
-        super.afterPropertiesSet();
+        this.afterPropertiesSet();
+        
+        log.info("目标数据源 {} 添加成功", key);
     }
     
     /**
      * 移除目标数据源
      * @param key 数据源键
      */
-    public void removeTargetDataSource(String key) {
+    /**
+     * 动态移除目标数据源
+     * @param key 数据源键
+     */
+    public synchronized void removeTargetDataSource(String key) {
+        log.info("移除目标数据源: {}", key);
+        
         dynamicDataSources.remove(key);
+        
+        // 更新resolvedDataSources
+        Map<Object, Object> targetDataSources = new HashMap<>(this.getResolvedDataSources());
+        targetDataSources.remove(key);
+        
         // 重新设置目标数据源
-        super.setTargetDataSources(new ConcurrentHashMap<>(dynamicDataSources));
+        this.setTargetDataSources(targetDataSources);
+        
         // 重新初始化数据源
-        super.afterPropertiesSet();
+        this.afterPropertiesSet();
+        
+        log.info("目标数据源 {} 移除成功", key);
     }
     
     /**
@@ -103,7 +143,15 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      * @param host Redis主机地址
      * @param port Redis端口
      */
-    public void addRedisCluster(String dataSourceKey, String host, int port) {
+    /**
+     * 添加Redis集群配置
+     * @param dataSourceKey 数据源键（与数据库对应）
+     * @param host Redis主机地址
+     * @param port Redis端口
+     */
+    public synchronized void addRedisCluster(String dataSourceKey, String host, int port) {
+        log.info("为数据源 {} 添加Redis集群配置: {}:{},", dataSourceKey, host, port);
+        
         // 创建Redis连接工厂
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(host, port);
         LettuceConnectionFactory connectionFactory = new LettuceConnectionFactory(config);
@@ -121,22 +169,36 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
         // 存储到动态Map中
         dynamicRedisConnectionFactories.put(dataSourceKey, connectionFactory);
         dynamicRedisTemplates.put(dataSourceKey, redisTemplate);
+        
+        log.info("为数据源 {} 添加Redis集群配置成功", dataSourceKey);
     }
     
     /**
      * 移除Redis集群配置
      * @param dataSourceKey 数据源键
      */
-    public void removeRedisCluster(String dataSourceKey) {
-        // 关闭连接工厂
+    /**
+     * 移除Redis集群配置
+     * @param dataSourceKey 数据源键
+     */
+    public synchronized void removeRedisCluster(String dataSourceKey) {
+        log.info("移除数据源 {} 的Redis集群配置", dataSourceKey);
+        
+        // 关闭并移除Redis连接工厂
         LettuceConnectionFactory connectionFactory = dynamicRedisConnectionFactories.get(dataSourceKey);
         if (connectionFactory != null) {
-            connectionFactory.destroy();
+            try {
+                connectionFactory.destroy();
+            } catch (Exception e) {
+                log.warn("关闭Redis连接工厂时发生异常: {}", dataSourceKey, e);
+            }
+            dynamicRedisConnectionFactories.remove(dataSourceKey);
         }
         
-        // 从Map中移除
-        dynamicRedisConnectionFactories.remove(dataSourceKey);
+        // 移除Redis模板
         dynamicRedisTemplates.remove(dataSourceKey);
+        
+        log.info("移除数据源 {} 的Redis集群配置成功", dataSourceKey);
     }
     
     /**
