@@ -4,6 +4,8 @@ import com.example.multi.datasource.demo.config.DynamicDataSource;
 import com.example.multi.datasource.demo.entity.User;
 import com.example.multi.datasource.demo.service.UserService;
 import com.alibaba.druid.pool.DruidDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,7 @@ import java.util.Map;
 @RequestMapping("/api/datasource")
 public class UnifiedDataSourceController {
 
+    private static final Logger log = LoggerFactory.getLogger(UnifiedDataSourceController.class);
     @Autowired
     private UserService userService;
 
@@ -67,6 +70,7 @@ public class UnifiedDataSourceController {
                 result.put("message", "无法获取动态数据源实例");
             }
         } catch (Exception e) {
+            log.error("添加数据源失败", e);
             result.put("success", false);
             result.put("message", "添加数据源失败: " + e.getMessage());
         }
