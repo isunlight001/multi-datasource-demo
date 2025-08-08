@@ -15,38 +15,33 @@ import java.util.Map;
 public class DataSourceConfig {
 
     @Bean
-    @Primary
-    public DynamicDataSource dynamicDataSource() {
-        DynamicDataSource dynamicDataSource = new DynamicDataSource();
-
-        // 创建默认的空数据源映射
-        Map<Object, Object> dataSourceMap = new HashMap<>();
-
-        dynamicDataSource.setTargetDataSources(dataSourceMap);
-        dynamicDataSource.setDefaultTargetDataSource(createDefaultDataSource());
-        return dynamicDataSource;
-    }
-
-    /**
-     * 创建默认数据源
-     * @return 默认数据源
-     */
-    private DataSource createDefaultDataSource() {
+    public DataSource dataSource() {
         DruidDataSource dataSource = new DruidDataSource();
-        dataSource.setUrl("jdbc:h2:mem:default");
+        dataSource.setUrl("jdbc:h2:mem:dataSource1");
         dataSource.setUsername("sa");
         dataSource.setPassword("");
         dataSource.setDriverClassName("org.h2.Driver");
-        dataSource.setInitialSize(5);
-        dataSource.setMinIdle(5);
-        dataSource.setMaxActive(20);
-        dataSource.setMaxWait(60000);
         return dataSource;
     }
 
     @Bean
     @Primary
-    public JdbcTemplate jdbcTemplate(@Qualifier("dynamicDataSource") DataSource dynamicDataSource) {
+    public DataSource dynamicDataSource() {
+        DynamicDataSource dynamicDataSource = new DynamicDataSource();
+
+        // 设置默认数据源
+        dynamicDataSource.setDefaultTargetDataSource(dataSource());
+
+        // 设置目标数据源Map
+        Map<Object, Object> dataSourceMap = new HashMap<>();
+        dataSourceMap.put("dataSource1", dataSource());
+        dynamicDataSource.setTargetDataSources(dataSourceMap);
+
+        return dynamicDataSource;
+    }
+
+    @Bean
+    public JdbcTemplate jdbcTemplate(DataSource dynamicDataSource) {
         return new JdbcTemplate(dynamicDataSource);
     }
 }

@@ -12,9 +12,15 @@
 - **动态切换数据源**：可在不同数据源之间自由切换
 - **数据源列表查询**：可查看当前所有可用的数据源
 
+### Redis集群管理
+- **动态添加Redis集群**：可为每个数据源动态配置对应的Redis集群
+- **动态删除Redis集群**：可删除数据源对应的Redis集群配置
+- **Redis集群列表查询**：可查看当前所有已配置的Redis集群
+
 ### 数据操作功能
 - **动态数据源操作**：支持在任意动态添加的数据源上进行数据操作
 - **批量数据源操作**：支持向所有数据源同时添加数据或从所有数据源查询数据
+- **Redis缓存操作**：支持在对应数据源的Redis集群中进行缓存操作
 
 ## API 接口说明
 
@@ -89,6 +95,55 @@ GET /api/datasource/list
 }
 ```
 
+### Redis集群管理接口
+
+#### 1. 为数据源添加Redis集群配置
+```
+POST /api/datasource/redis/add
+```
+
+**请求参数：**
+- `dsName` (String, 必填) - 数据源名称
+- `redisHost` (String, 必填) - Redis主机地址
+- `redisPort` (int, 必填) - Redis端口
+
+**响应示例：**
+```json
+{
+  "success": true,
+  "message": "为数据源 db2 添加Redis集群配置成功"
+}
+```
+
+#### 2. 删除数据源的Redis集群配置
+```
+DELETE /api/datasource/redis/remove
+```
+
+**请求参数：**
+- `dsName` (String, 必填) - 数据源名称
+
+**响应示例：**
+```json
+{
+  "success": true,
+  "message": "删除数据源 db2 的Redis集群配置成功"
+}
+```
+
+#### 3. 查询Redis集群列表
+```
+GET /api/datasource/redis/list
+```
+
+**响应示例：**
+```json
+{
+  "success": true,
+  "redisClusters": ["db2", "db3"]
+}
+```
+
 ### 数据操作接口
 
 #### 1. 动态数据源操作（统一接口）
@@ -98,11 +153,15 @@ GET /api/datasource/list
 - `PUT /api/datasource/{dsName}/users/{id}` - 在指定动态数据源中更新用户
 - `DELETE /api/datasource/{dsName}/users/{id}` - 在指定动态数据源中删除用户
 
-#### 2. 所有数据源操作（批量接口）
+#### 2. Redis操作接口
+- `POST /api/datasource/{dsName}/redis/set` - 在指定数据源的Redis中设置键值对
+- `GET /api/datasource/{dsName}/redis/get` - 从指定数据源的Redis中获取值
+
+#### 3. 所有数据源操作（批量接口）
 - `POST /api/datasource/all/users` - 向所有数据源中添加用户
 - `GET /api/datasource/all/users` - 从所有数据源中查询所有用户
 
-#### 3. 简化数据操作接口
+#### 4. 简化数据操作接口
 - `POST /users/dynamic/{dsName}` - 在指定动态数据源中添加用户
 - `GET /users/dynamic/{dsName}` - 从指定动态数据源中查询所有用户
 - `POST /users/all` - 向所有数据源中添加用户
@@ -123,14 +182,36 @@ curl -X POST "http://localhost:8081/api/datasource/add" \
   -d "driverClassName=org.h2.Driver"
 ```
 
-2. **在新数据源中添加数据**
+2. **为数据源添加Redis集群配置**
+```bash
+curl -X POST "http://localhost:8081/api/datasource/redis/add" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "dsName=mydb" \
+  -d "redisHost=localhost" \
+  -d "redisPort=6379"
+```
+
+3. **在新数据源中添加数据**
 ```bash
 curl -X POST "http://localhost:8081/api/datasource/mydb/users" \
   -H "Content-Type: application/json" \
   -d '{"name":"Tom", "email":"tom@example.com"}'
 ```
 
-3. **从新数据源中查询数据**
+4. **在新数据源的Redis中设置值**
+```bash
+curl -X POST "http://localhost:8081/api/datasource/mydb/redis/set" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "key=username" \
+  -d "value=Tom"
+```
+
+5. **从新数据源的Redis中获取值**
+```bash
+curl -X GET "http://localhost:8081/api/datasource/mydb/redis/get?key=username"
+```
+
+6. **从新数据源中查询数据**
 ```bash
 curl -X GET "http://localhost:8081/api/datasource/mydb/users"
 ```
@@ -176,12 +257,22 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 - 通过 `ThreadLocal` 实现数据源切换的线程安全性
 - 支持运行时动态添加和删除数据源
 
-### 2. 数据源配置
+### 2. Redis集群管理机制
+- 每个数据源可配置对应的Redis集群
+- 使用 `LettuceConnectionFactory` 实现Redis连接
+- 支持运行时动态添加和删除Redis集群配置
+
+### 3. 数据源配置
 - 使用 Druid 作为数据库连接池
 - 支持通过API参数动态配置数据源连接属性
 - 每个数据源可独立配置连接池参数
 
-### 3. 线程安全
+### 4. 缓存机制
+- 用户数据自动缓存到对应数据源的Redis集群中
+- 查询时优先从Redis缓存中获取数据
+- 支持手动操作Redis进行缓存管理
+
+### 5. 线程安全
 - 使用 `ThreadLocal` 确保数据源切换的线程安全性
 - 每个请求可以在自己的线程上下文中切换数据源
 
@@ -189,9 +280,10 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 
 1. **完全动态**：支持在运行时动态添加、删除和切换任意数量的数据源
 2. **批量操作**：支持向所有数据源同时添加数据或从所有数据源查询数据
-3. **无需代码修改**：添加或删除数据源时不需要修改任何代码
-4. **灵活配置**：可以为每个数据源单独配置连接池参数
-5. **易于测试**：提供完整的HTTP测试脚本和单元测试
+3. **缓存支持**：每个数据源可配置对应的Redis集群，实现数据缓存
+4. **无需代码修改**：添加或删除数据源时不需要修改任何代码
+5. **灵活配置**：可以为每个数据源单独配置连接池参数
+6. **易于测试**：提供完整的HTTP测试脚本和单元测试
 
 ## 注意事项
 
@@ -199,6 +291,7 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 2. 不允许添加同名数据源
 3. 切换数据源前需要确保数据源已存在
 4. 数据源操作具有线程局部性，不会影响其他请求的数据源设置
+5. 需要确保Redis服务正常运行才能使用Redis相关功能
 
 ## 测试方法
 

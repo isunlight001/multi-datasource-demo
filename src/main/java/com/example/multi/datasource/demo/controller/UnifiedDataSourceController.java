@@ -5,6 +5,7 @@ import com.example.multi.datasource.demo.entity.User;
 import com.example.multi.datasource.demo.service.UserService;
 import com.alibaba.druid.pool.DruidDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.sql.DataSource;
@@ -157,6 +158,92 @@ public class UnifiedDataSourceController {
     }
 
     /**
+     * 为指定数据源添加Redis集群配置
+     */
+    @PostMapping("/redis/add")
+    public Map<String, Object> addRedisCluster(@RequestParam String dsName,
+                                               @RequestParam String redisHost,
+                                               @RequestParam int redisPort) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
+            Map<Object, DataSource> existingDataSources = dynamicDataSource.getDynamicDataSources();
+            
+            // 检查数据源是否存在
+            if (!existingDataSources.containsKey(dsName)) {
+                result.put("success", false);
+                result.put("message", "数据源 " + dsName + " 不存在");
+                return result;
+            }
+            
+            // 添加Redis集群配置
+            dynamicDataSource.addRedisCluster(dsName, redisHost, redisPort);
+            
+            result.put("success", true);
+            result.put("message", "为数据源 " + dsName + " 添加Redis集群配置成功");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "添加Redis集群配置失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    /**
+     * 删除指定数据源的Redis集群配置
+     */
+    @DeleteMapping("/redis/remove")
+    public Map<String, Object> removeRedisCluster(@RequestParam String dsName) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
+            
+            // 检查Redis集群配置是否存在
+            Map<String, RedisTemplate<String, Object>> redisTemplates = dynamicDataSource.getDynamicRedisTemplates();
+            if (!redisTemplates.containsKey(dsName)) {
+                result.put("success", false);
+                result.put("message", "数据源 " + dsName + " 的Redis集群配置不存在");
+                return result;
+            }
+            
+            // 删除Redis集群配置
+            dynamicDataSource.removeRedisCluster(dsName);
+            
+            result.put("success", true);
+            result.put("message", "删除数据源 " + dsName + " 的Redis集群配置成功");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "删除Redis集群配置失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    /**
+     * 获取所有Redis集群配置列表
+     */
+    @GetMapping("/redis/list")
+    public Map<String, Object> listRedisClusters() {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
+            Map<String, RedisTemplate<String, Object>> redisTemplates = dynamicDataSource.getDynamicRedisTemplates();
+            
+            List<String> redisClusterNames = new ArrayList<>(redisTemplates.keySet());
+            result.put("success", true);
+            result.put("redisClusters", redisClusterNames);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "获取Redis集群列表失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+
+    /**
      * 在指定数据源中添加用户
      */
     @PostMapping("/{dsName}/users")
@@ -232,6 +319,65 @@ public class UnifiedDataSourceController {
         // 对于H2内存数据库，我们无法真正删除记录，这里只是演示
         result.put("success", true);
         result.put("message", "用户ID " + id + " 已从数据源 " + dsName + " 中删除");
+        return result;
+    }
+    
+    /**
+     * 在指定数据源的Redis中设置键值对
+     */
+    @PostMapping("/{dsName}/redis/set")
+    public Map<String, Object> setRedisValue(@PathVariable String dsName, 
+                                             @RequestParam String key, 
+                                             @RequestParam String value) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
+            RedisTemplate<String, Object> redisTemplate = dynamicDataSource.getRedisTemplate(dsName);
+            
+            if (redisTemplate == null) {
+                result.put("success", false);
+                result.put("message", "数据源 " + dsName + " 的Redis配置不存在");
+                return result;
+            }
+            
+            redisTemplate.opsForValue().set(key, value);
+            result.put("success", true);
+            result.put("message", "设置Redis键值对成功");
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "设置Redis键值对失败: " + e.getMessage());
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 从指定数据源的Redis中获取值
+     */
+    @GetMapping("/{dsName}/redis/get")
+    public Map<String, Object> getRedisValue(@PathVariable String dsName, 
+                                             @RequestParam String key) {
+        Map<String, Object> result = new HashMap<>();
+        
+        try {
+            DynamicDataSource dynamicDataSource = DynamicDataSource.getInstance();
+            RedisTemplate<String, Object> redisTemplate = dynamicDataSource.getRedisTemplate(dsName);
+            
+            if (redisTemplate == null) {
+                result.put("success", false);
+                result.put("message", "数据源 " + dsName + " 的Redis配置不存在");
+                return result;
+            }
+            
+            Object value = redisTemplate.opsForValue().get(key);
+            result.put("success", true);
+            result.put("value", value);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("message", "获取Redis值失败: " + e.getMessage());
+        }
+        
         return result;
     }
 }
