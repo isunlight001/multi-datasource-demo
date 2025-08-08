@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多数据源演示系统</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card h3 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+        }
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
+        .btn-success {
+            background-color: #28a745;
+        }
+        .btn-success:hover {
+            background-color: #218838;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .hidden {
+            display: none;
+        }
+        .section-title {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin: 20px 0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>多数据源演示系统</h1>
+        <p>本系统演示了在Spring Boot中动态管理多个数据源和Redis集群的功能</p>
+    </div>
+
+    <div class="container">
+        <div class="section-title">
+            <h2>数据源管理</h2>
+        </div>
+
+        <!-- 添加数据源 -->
+        <div class="card">
+            <h3>添加数据源</h3>
+            <form id="addDataSourceForm">
+                <div class="form-group">
+                    <label for="dsName">数据源名称:</label>
+                    <input type="text" id="dsName" name="dsName" required>
+                </div>
+                <div class="form-group">
+                    <label for="url">数据库URL:</label>
+                    <input type="text" id="url" name="url" value="jdbc:h2:mem:testdb" required>
+                </div>
+                <div class="form-group">
+                    <label for="username">用户名:</label>
+                    <input type="text" id="username" name="username" value="sa" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码:</label>
+                    <input type="password" id="password" name="password" value="">
+                </div>
+                <div class="form-group">
+                    <label for="driverClassName">驱动类:</label>
+                    <input type="text" id="driverClassName" name="driverClassName" value="org.h2.Driver" required>
+                </div>
+                <div class="form-group">
+                    <label for="initialSize">初始连接数:</label>
+                    <input type="number" id="initialSize" name="initialSize" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="minIdle">最小空闲连接:</label>
+                    <input type="number" id="minIdle" name="minIdle" value="5">
+                </div>
+                <div class="form-group">
+                    <label for="maxActive">最大活跃连接:</label>
+                    <input type="number" id="maxActive" name="maxActive" value="20">
+                </div>
+                <div class="form-group">
+                    <label for="maxWait">最大等待时间(ms):</label>
+                    <input type="number" id="maxWait" name="maxWait" value="60000">
+                </div>
+                <button type="submit" class="btn">添加数据源</button>
+            </form>
+            <div id="addDataSourceResult" class="result hidden"></div>
+        </div>
+
+        <!-- 数据源操作 -->
+        <div class="card">
+            <h3>数据源操作</h3>
+            <div class="form-group">
+                <label for="dataSourceList">数据源列表:</label>
+                <select id="dataSourceList"></select>
+                <button id="refreshDataSources" class="btn">刷新列表</button>
+            </div>
+            <div class="form-group">
+                <button id="listDataSources" class="btn">查询所有数据源</button>
+            </div>
+            <div class="form-group">
+                <button id="switchDataSource" class="btn">切换到选中数据源</button>
+            </div>
+            <div class="form-group">
+                <button id="removeDataSource" class="btn btn-danger">删除选中数据源</button>
+            </div>
+            <div id="dataSourceOperationResult" class="result hidden"></div>
+        </div>
+
+        <div class="section-title">
+            <h2>Redis集群管理</h2>
+        </div>
+
+        <!-- 添加Redis集群 -->
+        <div class="card">
+            <h3>添加Redis集群</h3>
+            <form id="addRedisForm">
+                <div class="form-group">
+                    <label for="redisDsName">数据源名称:</label>
+                    <select id="redisDsName" name="dsName"></select>
+                </div>
+                <div class="form-group">
+                    <label for="redisHost">Redis主机:</label>
+                    <input type="text" id="redisHost" name="redisHost" value="localhost" required>
+                </div>
+                <div class="form-group">
+                    <label for="redisPort">Redis端口:</label>
+                    <input type="number" id="redisPort" name="redisPort" value="6379" required>
+                </div>
+                <button type="submit" class="btn">添加Redis集群</button>
+            </form>
+            <div id="addRedisResult" class="result hidden"></div>
+        </div>
+
+        <!-- Redis集群操作 -->
+        <div class="card">
+            <h3>Redis集群操作</h3>
+            <div class="form-group">
+                <button id="listRedisClusters" class="btn">查询所有Redis集群</button>
+            </div>
+            <div class="form-group">
+                <button id="removeRedisCluster" class="btn btn-danger">删除选中数据源的Redis集群</button>
+            </div>
+            <div id="redisOperationResult" class="result hidden"></div>
+        </div>
+
+        <div class="section-title">
+            <h2>用户数据操作</h2>
+        </div>
+
+        <!-- 添加用户 -->
+        <div class="card">
+            <h3>添加用户</h3>
+            <form id="addUserForm">
+                <div class="form-group">
+                    <label for="userDsName">数据源:</label>
+                    <select id="userDsName" name="dsName"></select>
+                </div>
+                <div class="form-group">
+                    <label for="userName">用户名:</label>
+                    <input type="text" id="userName" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">邮箱:</label>
+                    <input type="email" id="userEmail" name="email" required>
+                </div>
+                <button type="submit" class="btn">添加用户</button>
+            </form>
+            <div id="addUserResult" class="result hidden"></div>
+        </div>
+
+        <!-- 查询用户 -->
+        <div class="card">
+            <h3>查询用户</h3>
+            <div class="form-group">
+                <label for="queryUserDsName">数据源:</label>
+                <select id="queryUserDsName" name="dsName"></select>
+            </div>
+            <button id="queryUsers" class="btn">查询所有用户</button>
+            <button id="queryAllUsers" class="btn btn-success">查询所有数据源用户</button>
+            <div id="queryUserResult" class="result hidden"></div>
+        </div>
+
+        <div class="section-title">
+            <h2>Redis操作</h2>
+        </div>
+
+        <!-- Redis操作 -->
+        <div class="card">
+            <h3>Redis操作</h3>
+            <div class="form-group">
+                <label for="redisOpDsName">数据源:</label>
+                <select id="redisOpDsName" name="dsName"></select>
+            </div>
+            <div class="form-group">
+                <label for="redisKey">键:</label>
+                <input type="text" id="redisKey" name="key" required>
+            </div>
+            <div class="form-group">
+                <label for="redisValue">值:</label>
+                <input type="text" id="redisValue" name="value">
+            </div>
+            <button id="setRedisValue" class="btn">设置键值对</button>
+            <button id="getRedisValue" class="btn">获取值</button>
+            <div id="redisOperationResult2" class="result hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        const BASE_URL = '/api/datasource';
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 绑定事件
+            bindEvents();
+            
+            // 初始化数据源列表
+            refreshDataSources();
+        });
+        
+        // 绑定事件
+        function bindEvents() {
+            // 添加数据源表单提交
+            document.getElementById('addDataSourceForm').addEventListener('submit', addDataSource);
+            
+            // 刷新数据源列表
+            document.getElementById('refreshDataSources').addEventListener('click', refreshDataSources);
+            
+            // 查询所有数据源
+            document.getElementById('listDataSources').addEventListener('click', listDataSources);
+            
+            // 切换数据源
+            document.getElementById('switchDataSource').addEventListener('click', switchDataSource);
+            
+            // 删除数据源
+            document.getElementById('removeDataSource').addEventListener('click', removeDataSource);
+            
+            // 添加Redis集群表单提交
+            document.getElementById('addRedisForm').addEventListener('submit', addRedisCluster);
+            
+            // 查询所有Redis集群
+            document.getElementById('listRedisClusters').addEventListener('click', listRedisClusters);
+            
+            // 删除Redis集群
+            document.getElementById('removeRedisCluster').addEventListener('click', removeRedisCluster);
+            
+            // 添加用户表单提交
+            document.getElementById('addUserForm').addEventListener('submit', addUser);
+            
+            // 查询用户
+            document.getElementById('queryUsers').addEventListener('click', queryUsers);
+            
+            // 查询所有数据源用户
+            document.getElementById('queryAllUsers').addEventListener('click', queryAllUsers);
+            
+            // 设置Redis值
+            document.getElementById('setRedisValue').addEventListener('click', setRedisValue);
+            
+            // 获取Redis值
+            document.getElementById('getRedisValue').addEventListener('click', getRedisValue);
+        }
+        
+        // 刷新数据源列表
+        function refreshDataSources() {
+            fetch(BASE_URL + '/list')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const dataSourceList = document.getElementById('dataSourceList');
+                        const redisDsName = document.getElementById('redisDsName');
+                        const userDsName = document.getElementById('userDsName');
+                        const queryUserDsName = document.getElementById('queryUserDsName');
+                        const redisOpDsName = document.getElementById('redisOpDsName');
+                        
+                        // 清空现有选项
+                        dataSourceList.innerHTML = '';
+                        redisDsName.innerHTML = '';
+                        userDsName.innerHTML = '';
+                        queryUserDsName.innerHTML = '';
+                        redisOpDsName.innerHTML = '';
+                        
+                        // 添加新选项
+                        data.dataSources.forEach(ds => {
+                            const option = document.createElement('option');
+                            option.value = ds;
+                            option.textContent = ds;
+                            
+                            dataSourceList.appendChild(option.cloneNode(true));
+                            redisDsName.appendChild(option.cloneNode(true));
+                            userDsName.appendChild(option.cloneNode(true));
+                            queryUserDsName.appendChild(option.cloneNode(true));
+                            redisOpDsName.appendChild(option.cloneNode(true));
+                        });
+                    } else {
+                        showResult('dataSourceOperationResult', '获取数据源列表失败: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    showResult('dataSourceOperationResult', '获取数据源列表出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 添加数据源
+        function addDataSource(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(document.getElementById('addDataSourceForm'));
+            
+            fetch(BASE_URL + '/add', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showResult('addDataSourceResult', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                    if (data.success) {
+                        // 重置表单
+                        document.getElementById('addDataSourceForm').reset();
+                        // 刷新数据源列表
+                        refreshDataSources();
+                    }
+                })
+                .catch(error => {
+                    showResult('addDataSourceResult', '添加数据源出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 查询所有数据源
+        function listDataSources() {
+            fetch(BASE_URL + '/list')
+                .then(response => response.json())
+                .then(data => {
+                    showResult('dataSourceOperationResult', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    showResult('dataSourceOperationResult', '查询数据源列表出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 切换数据源
+        function switchDataSource() {
+            const dsName = document.getElementById('dataSourceList').value;
+            if (!dsName) {
+                showResult('dataSourceOperationResult', '请选择一个数据源', 'error');
+                return;
+            }
+            
+            fetch(BASE_URL + '/switch?dsName=' + encodeURIComponent(dsName), {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showResult('dataSourceOperationResult', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    showResult('dataSourceOperationResult', '切换数据源出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 删除数据源
+        function removeDataSource() {
+            const dsName = document.getElementById('dataSourceList').value;
+            if (!dsName) {
+                showResult('dataSourceOperationResult', '请选择一个数据源', 'error');
+                return;
+            }
+            
+            if (!confirm('确定要删除数据源 "' + dsName + '" 吗？')) {
+                return;
+            }
+            
+            fetch(BASE_URL + '/remove?dsName=' + encodeURIComponent(dsName), {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showResult('dataSourceOperationResult', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                    if (data.success) {
+                        // 刷新数据源列表
+                        refreshDataSources();
+                    }
+                })
+                .catch(error => {
+                    showResult('dataSourceOperationResult', '删除数据源出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 添加Redis集群
+        function addRedisCluster(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(document.getElementById('addRedisForm'));
+            
+            fetch(BASE_URL + '/redis/add', {
+                method: 'POST',
+                body: new URLSearchParams(formData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showResult('addRedisResult', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    showResult('addRedisResult', '添加Redis集群出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 查询所有Redis集群
+        function listRedisClusters() {
+            fetch(BASE_URL + '/redis/list')
+                .then(response => response.json())
+                .then(data => {
+                    showResult('redisOperationResult', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    showResult('redisOperationResult', '查询Redis集群列表出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 删除Redis集群
+        function removeRedisCluster() {
+            const dsName = document.getElementById('redisDsName').value;
+            if (!dsName) {
+                showResult('redisOperationResult', '请选择一个数据源', 'error');
+                return;
+            }
+            
+            if (!confirm('确定要删除数据源 "' + dsName + '" 的Redis集群配置吗？')) {
+                return;
+            }
+            
+            fetch(BASE_URL + '/redis/remove?dsName=' + encodeURIComponent(dsName), {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showResult('redisOperationResult', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    showResult('redisOperationResult', '删除Redis集群出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 添加用户
+        function addUser(event) {
+            event.preventDefault();
+            
+            const dsName = document.getElementById('userDsName').value;
+            if (!dsName) {
+                showResult('addUserResult', '请选择一个数据源', 'error');
+                return;
+            }
+            
+            const userData = {
+                name: document.getElementById('userName').value,
+                email: document.getElementById('userEmail').value
+            };
+            
+            fetch(BASE_URL + '/' + encodeURIComponent(dsName) + '/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showResult('addUserResult', JSON.stringify(data, null, 2), 'success');
+                    // 重置表单
+                    document.getElementById('addUserForm').reset();
+                })
+                .catch(error => {
+                    showResult('addUserResult', '添加用户出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 查询用户
+        function queryUsers() {
+            const dsName = document.getElementById('queryUserDsName').value;
+            if (!dsName) {
+                showResult('queryUserResult', '请选择一个数据源', 'error');
+                return;
+            }
+            
+            fetch(BASE_URL + '/' + encodeURIComponent(dsName) + '/users')
+                .then(response => response.json())
+                .then(data => {
+                    showResult('queryUserResult', JSON.stringify(data, null, 2), 'success');
+                })
+                .catch(error => {
+                    showResult('queryUserResult', '查询用户出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 查询所有数据源用户
+        function queryAllUsers() {
+            fetch(BASE_URL + '/all/users')
+                .then(response => response.json())
+                .then(data => {
+                    showResult('queryUserResult', JSON.stringify(data, null, 2), 'success');
+                })
+                .catch(error => {
+                    showResult('queryUserResult', '查询所有用户出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 设置Redis值
+        function setRedisValue() {
+            const dsName = document.getElementById('redisOpDsName').value;
+            const key = document.getElementById('redisKey').value;
+            const value = document.getElementById('redisValue').value;
+            
+            if (!dsName) {
+                showResult('redisOperationResult2', '请选择一个数据源', 'error');
+                return;
+            }
+            
+            if (!key) {
+                showResult('redisOperationResult2', '请输入键', 'error');
+                return;
+            }
+            
+            fetch(BASE_URL + '/' + encodeURIComponent(dsName) + '/redis/set?key=' + encodeURIComponent(key) + '&value=' + encodeURIComponent(value), {
+                method: 'POST'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    showResult('redisOperationResult2', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    showResult('redisOperationResult2', '设置Redis值出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 获取Redis值
+        function getRedisValue() {
+            const dsName = document.getElementById('redisOpDsName').value;
+            const key = document.getElementById('redisKey').value;
+            
+            if (!dsName) {
+                showResult('redisOperationResult2', '请选择一个数据源', 'error');
+                return;
+            }
+            
+            if (!key) {
+                showResult('redisOperationResult2', '请输入键', 'error');
+                return;
+            }
+            
+            fetch(BASE_URL + '/' + encodeURIComponent(dsName) + '/redis/get?key=' + encodeURIComponent(key))
+                .then(response => response.json())
+                .then(data => {
+                    showResult('redisOperationResult2', JSON.stringify(data, null, 2), data.success ? 'success' : 'error');
+                })
+                .catch(error => {
+                    showResult('redisOperationResult2', '获取Redis值出错: ' + error.message, 'error');
+                });
+        }
+        
+        // 显示结果
+        function showResult(elementId, message, type) {
+            const resultElement = document.getElementById(elementId);
+            resultElement.textContent = message;
+            resultElement.className = 'result ' + (type === 'error' ? 'error' : 'success');
+            resultElement.classList.remove('hidden');
+            
+            // 滚动到结果区域
+            resultElement.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

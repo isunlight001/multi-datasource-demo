@@ -55,6 +55,15 @@ mvn clean package
 mvn spring-boot:run
 ```
 
+### 访问前端界面
+
+项目运行后，可以通过以下URL访问前端测试界面：
+```
+http://localhost:8080
+```
+
+前端界面提供了完整的图形化操作界面，可以方便地测试所有API功能。
+
 ## API 接口
 
 项目提供以下API接口：
