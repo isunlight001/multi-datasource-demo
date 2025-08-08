@@ -22,6 +22,11 @@
 - **批量数据源操作**：支持向所有数据源同时添加数据或从所有数据源查询数据
 - **Redis缓存操作**：支持在对应数据源的Redis集群中进行缓存操作
 
+### 表管理功能
+- **动态创建表**：可在指定数据源中创建表
+- **动态删除表**：可在指定数据源中删除表
+- **表列表查询**：可查看指定数据源中的所有表
+
 ## API 接口说明
 
 ### 数据源管理接口
@@ -272,7 +277,12 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 - 查询时优先从Redis缓存中获取数据
 - 支持手动操作Redis进行缓存管理
 
-### 5. 线程安全
+### 5. 表管理机制
+- 提供统一的表管理接口，支持在指定数据源中创建、删除和查询表
+- 使用 JDBC 的 DatabaseMetaData 获取数据源中的表信息
+- 支持执行原生SQL语句进行表结构操作
+
+### 6. 线程安全
 - 使用 `ThreadLocal` 确保数据源切换的线程安全性
 - 每个请求可以在自己的线程上下文中切换数据源
 
@@ -292,6 +302,7 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 3. 切换数据源前需要确保数据源已存在
 4. 数据源操作具有线程局部性，不会影响其他请求的数据源设置
 5. 需要确保Redis服务正常运行才能使用Redis相关功能
+6. 表操作需要具有相应权限，且表名需要符合数据库命名规范
 
 ## 测试方法
 
@@ -301,14 +312,9 @@ curl -X DELETE "http://localhost:8081/api/datasource/remove?dsName=mydb"
 - `UserServiceTest` - 测试用户服务功能
 - `UnifiedDataSourceControllerTest` - 测试统一数据源控制器
 - `DynamicDataSourceIntegrationTest` - 集成测试完整功能
+- `TableManagementControllerTest` - 测试表管理功能
 
 运行测试：
 ```bash
 mvn test
 ```
-
-### 2. HTTP接口测试
-可以使用项目中的 `datasource-tests.http` 文件进行测试，该文件包含了完整的测试用例。
-
-### 3. 手动测试
-使用curl或Postman等工具按照上述使用示例进行测试。
