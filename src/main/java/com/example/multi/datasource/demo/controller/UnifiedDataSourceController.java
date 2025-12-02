@@ -24,6 +24,9 @@ public class UnifiedDataSourceController {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private com.example.multi.datasource.demo.config.DataSourceProperties dataSourceProperties;
 
     /**
      * 动态添加数据源
@@ -168,9 +171,21 @@ public class UnifiedDataSourceController {
             Map<Object, DataSource> existingDataSources = dynamicDataSource.getDynamicDataSources();
             
             List<String> dataSourceNames = new ArrayList<>();
+            // 添加动态数据源
             for (Object key : existingDataSources.keySet()) {
                 dataSourceNames.add((String) key);
             }
+            
+            log.info("动态数据源数量: {}", existingDataSources.size());
+            
+            // 添加预定义的数据源
+            if (dataSourceProperties != null && dataSourceProperties.getDataSources() != null) {
+                log.info("预定义数据源数量: {}", dataSourceProperties.getDataSources().size());
+                dataSourceNames.addAll(dataSourceProperties.getDataSources().keySet());
+            } else {
+                log.warn("预定义数据源为空或未正确加载");
+            }
+            
             log.info("获取到 {} 个数据源", dataSourceNames.size());
             result.put("success", true);
             result.put("dataSources", dataSourceNames);

@@ -6,4 +6,4 @@ target/
 *.log
 *.tmp
 *.temp
-HELP.md
+HELP.md!/.idea/misc.xml

@@ -1,7 +1,9 @@
 package com.example.multi.datasource.demo.controller;
 
+import com.example.multi.datasource.demo.config.DataSourceProperties;
 import com.example.multi.datasource.demo.config.DynamicDataSource;
 import com.alibaba.druid.pool.DruidDataSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.sql.DataSource;
@@ -13,6 +15,9 @@ import java.util.Map;
 @RestController
 @RequestMapping("/datasource")
 public class DataSourceController {
+    
+    @Autowired
+    private DataSourceProperties dataSourceProperties;
     
     /**
      * 动态添加数据源(内存中)
@@ -157,9 +162,14 @@ public class DataSourceController {
             Map<Object, DataSource> existingDataSources = dynamicDataSource.getDynamicDataSources();
             
             List<String> dataSourceNames = new ArrayList<>();
+            // 添加动态数据源
             for (Object key : existingDataSources.keySet()) {
                 dataSourceNames.add((String) key);
             }
+            
+            // 添加预定义的数据源
+            dataSourceNames.addAll(dataSourceProperties.getDataSources().keySet());
+            
             result.put("success", true);
             result.put("dataSources", dataSourceNames);
         } catch (Exception e) {
