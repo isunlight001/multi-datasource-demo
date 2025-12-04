@@ -310,54 +310,130 @@ public class UnifiedDataSourceController {
      * 在指定数据源中添加用户
      */
     @PostMapping("/{dsName}/users")
-    public User addUser(@PathVariable String dsName, @RequestBody User user) {
+    public Map<String, Object> addUser(@PathVariable String dsName, @RequestBody User user) {
         log.info("在数据源 {} 中添加用户: {}", dsName, user);
-        return userService.saveToDynamicDataSource(user.getName(), user.getEmail(), dsName);
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User savedUser = userService.saveToDynamicDataSource(user.getName(), user.getEmail(), dsName);
+            result.put("success", true);
+            result.put("data", savedUser);
+            result.put("message", "用户添加成功");
+        } catch (Exception e) {
+            log.error("在数据源 {} 中添加用户失败: {}", dsName, e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "添加用户失败: " + e.getMessage());
+        }
+        return result;
     }
     
     /**
      * 向所有数据源中添加用户
      */
     @PostMapping("/all/users")
-    public List<User> addUserToAllDataSources(@RequestBody User user) {
+    public Map<String, Object> addUserToAllDataSources(@RequestBody User user) {
         log.info("向所有数据源中添加用户: {}", user);
-        return userService.saveToAllDataSources(user.getName(), user.getEmail());
+        Map<String, Object> result = new HashMap<>();
+        try {
+            List<User> users = userService.saveToAllDataSources(user.getName(), user.getEmail());
+            result.put("success", true);
+            result.put("data", users);
+            result.put("message", "用户添加成功");
+        } catch (Exception e) {
+            log.error("向所有数据源中添加用户失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "添加用户失败: " + e.getMessage());
+        }
+        return result;
     }
 
     /**
      * 从指定数据源中获取所有用户
      */
     @GetMapping("/{dsName}/users")
-    public List<User> getUsers(@PathVariable String dsName) {
+    public Map<String, Object> getUsers(@PathVariable String dsName) {
         log.info("从数据源 {} 中获取所有用户", dsName);
-        return userService.getAllUsersFromDynamicDataSource(dsName);
+        Map<String, Object> result = new HashMap<>();
+        try {
+            List<User> users = userService.getAllUsersFromDynamicDataSource(dsName);
+            result.put("success", true);
+            result.put("data", users);
+            result.put("message", "获取用户列表成功");
+        } catch (Exception e) {
+            log.error("从数据源 {} 中获取用户失败: {}", dsName, e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "获取用户列表失败: " + e.getMessage());
+        }
+        return result;
     }
     
     /**
      * 从所有数据源中获取所有用户
      */
     @GetMapping("/all/users")
-    public List<User> getAllUsersFromAllDataSources() {
+    public Map<String, Object> getAllUsersFromAllDataSources() {
         log.info("从所有数据源中获取所有用户");
-        return userService.getAllUsersFromAllDataSources();
+        Map<String, Object> result = new HashMap<>();
+        try {
+            List<User> users = userService.getAllUsersFromAllDataSources();
+            result.put("success", true);
+            result.put("data", users);
+            result.put("message", "获取所有用户列表成功");
+        } catch (Exception e) {
+            log.error("从所有数据源中获取用户失败: {}", e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "获取所有用户列表失败: " + e.getMessage());
+        }
+        return result;
     }
 
     /**
      * 在指定数据源中根据ID获取用户
      */
     @GetMapping("/{dsName}/users/{id}")
-    public User getUserById(@PathVariable String dsName, @PathVariable Long id) {
+    public Map<String, Object> getUserById(@PathVariable String dsName, @PathVariable Long id) {
         log.info("在数据源 {} 中根据ID {} 获取用户", dsName, id);
-        return userService.getUserByIdFromDynamicDataSource(id, dsName);
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User user = userService.getUserByIdFromDynamicDataSource(id, dsName);
+            if (user != null) {
+                result.put("success", true);
+                result.put("data", user);
+                result.put("message", "获取用户成功");
+            } else {
+                result.put("success", false);
+                result.put("message", "未找到ID为 " + id + " 的用户");
+            }
+        } catch (Exception e) {
+            log.error("在数据源 {} 中根据ID {} 获取用户失败: {}", dsName, id, e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "获取用户失败: " + e.getMessage());
+        }
+        return result;
     }
 
     /**
      * 在指定数据源中更新用户
      */
     @PutMapping("/{dsName}/users/{id}")
-    public User updateUser(@PathVariable String dsName, @PathVariable Long id, @RequestBody User user) {
+    public Map<String, Object> updateUser(@PathVariable String dsName, @PathVariable Long id, @RequestBody User user) {
         log.info("在数据源 {} 中更新用户ID {}: {}", dsName, id, user);
-        return userService.updateUserInDynamicDataSource(id, user.getName(), user.getEmail(), dsName);
+        Map<String, Object> result = new HashMap<>();
+        try {
+            User updatedUser = userService.updateUserInDynamicDataSource(id, user.getName(), user.getEmail(), dsName);
+            if (updatedUser != null) {
+                result.put("success", true);
+                result.put("data", updatedUser);
+                result.put("message", "用户更新成功");
+            } else {
+                result.put("success", false);
+                result.put("message", "未找到ID为 " + id + " 的用户，无法更新");
+            }
+        } catch (Exception e) {
+            log.error("在数据源 {} 中更新用户ID {} 失败: {}", dsName, id, e.getMessage(), e);
+            result.put("success", false);
+            result.put("message", "更新用户失败: " + e.getMessage());
+        }
+        return result;
     }
 
     /**

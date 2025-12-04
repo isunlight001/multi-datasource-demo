@@ -23,18 +23,18 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
     private static final ThreadLocal<String> CONTEXT_HOLDER = new ThreadLocal<>();
     
     // 保存DynamicDataSource实例，用于动态添加数据源
-    private static DynamicDataSource instance;
+    private static volatile DynamicDataSource instance;
     
     private ApplicationContext applicationContext;
     
     // 存储动态创建的数据源
-    private Map<Object, DataSource> dynamicDataSources = new ConcurrentHashMap<>();
+    private final Map<Object, DataSource> dynamicDataSources = new ConcurrentHashMap<>();
     
     // 存储动态创建的Redis连接工厂
-    private Map<String, LettuceConnectionFactory> dynamicRedisConnectionFactories = new ConcurrentHashMap<>();
+    private final Map<String, LettuceConnectionFactory> dynamicRedisConnectionFactories = new ConcurrentHashMap<>();
     
     // 存储动态创建的Redis模板
-    private Map<String, RedisTemplate<String, Object>> dynamicRedisTemplates = new ConcurrentHashMap<>();
+    private final Map<String, RedisTemplate<String, Object>> dynamicRedisTemplates = new ConcurrentHashMap<>();
     
     public DynamicDataSource() {
         instance = this;
@@ -44,8 +44,15 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
         // 从Spring容器中获取动态Redis连接工厂和模板Map
-        this.dynamicRedisConnectionFactories = applicationContext.getBean("dynamicRedisConnectionFactoryMap", Map.class);
-        this.dynamicRedisTemplates = applicationContext.getBean("dynamicRedisTemplateMap", Map.class);
+        Map<String, LettuceConnectionFactory> redisConnectionFactoryMap = applicationContext.getBean("dynamicRedisConnectionFactoryMap", Map.class);
+        Map<String, RedisTemplate<String, Object>> redisTemplateMap = applicationContext.getBean("dynamicRedisTemplateMap", Map.class);
+        
+        // 安全地替换Map引用
+        this.dynamicRedisConnectionFactories.clear();
+        this.dynamicRedisConnectionFactories.putAll(redisConnectionFactoryMap);
+        
+        this.dynamicRedisTemplates.clear();
+        this.dynamicRedisTemplates.putAll(redisTemplateMap);
     }
     
     @Override
@@ -76,11 +83,6 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
     }
     
     /**
-     * 添加目标数据源
-     * @param key 数据源键
-     * @param dataSource 数据源
-     */
-    /**
      * 动态添加目标数据源
      * @param key 数据源键
      * @param dataSource 数据源
@@ -104,15 +106,17 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
     }
     
     /**
-     * 移除目标数据源
-     * @param key 数据源键
-     */
-    /**
      * 动态移除目标数据源
      * @param key 数据源键
      */
     public synchronized void removeTargetDataSource(String key) {
         log.info("移除目标数据源: {}", key);
+        
+        // 防止移除默认数据源
+        if ("dataSource1".equals(key)) {
+            log.warn("不能移除默认数据源: {}", key);
+            throw new IllegalArgumentException("不能移除默认数据源: " + key);
+        }
         
         dynamicDataSources.remove(key);
         
@@ -134,7 +138,7 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      * @return 动态数据源Map
      */
     public Map<Object, DataSource> getDynamicDataSources() {
-        return dynamicDataSources;
+        return new HashMap<>(dynamicDataSources);
     }
     
     /**
@@ -143,14 +147,20 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      * @param host Redis主机地址
      * @param port Redis端口
      */
-    /**
-     * 添加Redis集群配置
-     * @param dataSourceKey 数据源键（与数据库对应）
-     * @param host Redis主机地址
-     * @param port Redis端口
-     */
     public synchronized void addRedisCluster(String dataSourceKey, String host, int port) {
-        log.info("为数据源 {} 添加Redis集群配置: {}:{},", dataSourceKey, host, port);
+        log.info("为数据源 {} 添加Redis集群配置: {}:{}", dataSourceKey, host, port);
+        
+        // 检查数据源是否存在
+        if (!dynamicDataSources.containsKey(dataSourceKey)) {
+            log.warn("数据源 {} 不存在，无法添加Redis集群配置", dataSourceKey);
+            throw new IllegalArgumentException("数据源 " + dataSourceKey + " 不存在");
+        }
+        
+        // 检查Redis集群配置是否已存在
+        if (dynamicRedisConnectionFactories.containsKey(dataSourceKey)) {
+            log.warn("数据源 {} 的Redis集群配置已存在", dataSourceKey);
+            throw new IllegalArgumentException("数据源 " + dataSourceKey + " 的Redis集群配置已存在");
+        }
         
         // 创建Redis连接工厂
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration(host, port);
@@ -177,12 +187,14 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      * 移除Redis集群配置
      * @param dataSourceKey 数据源键
      */
-    /**
-     * 移除Redis集群配置
-     * @param dataSourceKey 数据源键
-     */
     public synchronized void removeRedisCluster(String dataSourceKey) {
         log.info("移除数据源 {} 的Redis集群配置", dataSourceKey);
+        
+        // 检查Redis集群配置是否存在
+        if (!dynamicRedisConnectionFactories.containsKey(dataSourceKey)) {
+            log.warn("数据源 {} 的Redis集群配置不存在", dataSourceKey);
+            throw new IllegalArgumentException("数据源 " + dataSourceKey + " 的Redis集群配置不存在");
+        }
         
         // 关闭并移除Redis连接工厂
         LettuceConnectionFactory connectionFactory = dynamicRedisConnectionFactories.get(dataSourceKey);
@@ -215,7 +227,7 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      * @return Redis连接工厂Map
      */
     public Map<String, LettuceConnectionFactory> getDynamicRedisConnectionFactories() {
-        return dynamicRedisConnectionFactories;
+        return new HashMap<>(dynamicRedisConnectionFactories);
     }
     
     /**
@@ -223,6 +235,6 @@ public class DynamicDataSource extends AbstractRoutingDataSource implements Appl
      * @return Redis模板Map
      */
     public Map<String, RedisTemplate<String, Object>> getDynamicRedisTemplates() {
-        return dynamicRedisTemplates;
+        return new HashMap<>(dynamicRedisTemplates);
     }
 }

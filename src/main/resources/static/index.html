@@ -114,7 +114,60 @@
     <div class="header">
         <h1>多数据源演示系统</h1>
         <p>本系统演示了在Spring Boot中动态管理多个数据源和Redis集群的功能</p>
+        <div id="appInfo">
+            <p>启动时间: <span id="startupTime">加载中...</span> | 运行时长: <span id="uptime">加载中...</span></p>
+        </div>
     </div>
+    <script>
+        // 获取应用启动信息
+        function loadAppInfo() {
+            const baseUrl = '';
+            
+            fetch(baseUrl + '/api/info/startup')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('startupTime').textContent = data.startupTime;
+                    document.getElementById('uptime').textContent = data.uptime;
+                } else {
+                    document.getElementById('startupTime').textContent = '获取失败';
+                    document.getElementById('uptime').textContent = '获取失败';
+                }
+            })
+            .catch(error => {
+                console.error('获取应用信息失败:', error);
+                document.getElementById('startupTime').textContent = '获取失败';
+                document.getElementById('uptime').textContent = '获取失败';
+            });
+        }
+        
+        // 获取访问统计信息
+        function loadStats() {
+            const baseUrl = '';
+            
+            fetch(baseUrl + '/api/info/stats')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('homePageViews').textContent = data.homePageViews;
+                    document.getElementById('apiCalls').textContent = data.apiCalls;
+                }
+            })
+            .catch(error => {
+                console.error('获取统计信息失败:', error);
+            });
+        }
+        
+        // 页面加载完成后获取应用信息
+        window.addEventListener('load', function() {
+            loadAppInfo();
+            loadStats();
+            // 每30秒更新一次运行时长
+            setInterval(loadAppInfo, 30000);
+            // 每10秒更新一次统计信息
+            setInterval(loadStats, 10000);
+        });
+    </script>
 
     <div class="container">
         <div class="section-title">
@@ -784,5 +837,17 @@
             });
         }
     </script>
+    
+    <div class="container">
+        <div class="section-title">
+            <h2>访问统计</h2>
+        </div>
+        
+        <div class="card">
+            <h3>系统访问统计</h3>
+            <p>首页访问次数: <span id="homePageViews">0</span></p>
+            <p>API调用次数: <span id="apiCalls">0</span></p>
+        </div>
+    </div>
 </body>
 </html>

@@ -143,26 +143,24 @@ public class TableService {
                 List<Map<String, String>> tables = new ArrayList<>();
                 
                 // 获取数据库元数据
-                Connection connection = jdbcTemplate.getDataSource().getConnection();
-                DatabaseMetaData metaData = connection.getMetaData();
-                
-                // 对于H2数据库，schemaPattern应该是PUBLIC
-                String schemaPattern = null;
-                if (isH2Database(connection)) {
-                    schemaPattern = "PUBLIC";
+                try (Connection connection = jdbcTemplate.getDataSource().getConnection()) {
+                    DatabaseMetaData metaData = connection.getMetaData();
+                    
+                    // 对于H2数据库，schemaPattern应该是PUBLIC
+                    String schemaPattern = null;
+                    if (isH2Database(connection)) {
+                        schemaPattern = "PUBLIC";
+                    }
+                    
+                    try (java.sql.ResultSet rs = metaData.getTables(null, schemaPattern, null, new String[]{"TABLE"})) {
+                        while (rs.next()) {
+                            Map<String, String> tableInfo = new HashMap<>();
+                            tableInfo.put("TABLE_NAME", rs.getString("TABLE_NAME"));
+                            tableInfo.put("TABLE_TYPE", rs.getString("TABLE_TYPE"));
+                            tables.add(tableInfo);
+                        }
+                    }
                 }
-                
-                java.sql.ResultSet rs = metaData.getTables(null, schemaPattern, null, new String[]{"TABLE"});
-                
-                while (rs.next()) {
-                    Map<String, String> tableInfo = new HashMap<>();
-                    tableInfo.put("TABLE_NAME", rs.getString("TABLE_NAME"));
-                    tableInfo.put("TABLE_TYPE", rs.getString("TABLE_TYPE"));
-                    tables.add(tableInfo);
-                }
-                
-                rs.close();
-                connection.close();
                 
                 log.info("获取数据源 {} 中的表列表成功，共 {} 张表", dataSourceName, tables.size());
                 result.put("success", true);

@@ -143,12 +143,6 @@ public class UserService {
     }
     
     /**
-     * 从指定数据源的Redis中获取用户信息
-     * @param dataSourceName 数据源名称
-     * @param userId 用户ID
-     * @return 用户信息
-     */
-    /**
      * 在指定数据源的Redis中获取用户信息
      * @param dataSourceName 数据源名称
      * @param userId 用户ID
@@ -156,16 +150,20 @@ public class UserService {
      */
     public User getUserFromRedis(String dataSourceName, Long userId) {
         log.info("从数据源 {} 的Redis中获取用户ID: {}", dataSourceName, userId);
-        RedisTemplate<String, Object> redisTemplate = DynamicDataSource.getInstance().getRedisTemplate(dataSourceName);
-        if (redisTemplate != null) {
-            String userKey = "user:" + userId;
-            User user = (User) redisTemplate.opsForValue().get(userKey);
-            if (user != null) {
-                log.debug("从数据源 {} 的Redis中获取到用户: {}", dataSourceName, user);
-            } else {
-                log.debug("在数据源 {} 的Redis中未找到用户ID: {}", dataSourceName, userId);
+        try {
+            RedisTemplate<String, Object> redisTemplate = DynamicDataSource.getInstance().getRedisTemplate(dataSourceName);
+            if (redisTemplate != null) {
+                String userKey = "user:" + userId;
+                User user = (User) redisTemplate.opsForValue().get(userKey);
+                if (user != null) {
+                    log.debug("从数据源 {} 的Redis中获取到用户: {}", dataSourceName, user);
+                } else {
+                    log.debug("在数据源 {} 的Redis中未找到用户ID: {}", dataSourceName, userId);
+                }
+                return user;
             }
-            return user;
+        } catch (Exception e) {
+            log.warn("从数据源 {} 的Redis中获取用户信息时发生异常: {}", dataSourceName, e.getMessage(), e);
         }
         return null;
     }
@@ -177,11 +175,15 @@ public class UserService {
      */
     public void saveUserToRedis(String dataSourceName, User user) {
         log.info("将用户信息保存到数据源 {} 的Redis中: {}", dataSourceName, user);
-        RedisTemplate<String, Object> redisTemplate = DynamicDataSource.getInstance().getRedisTemplate(dataSourceName);
-        if (redisTemplate != null) {
-            String userKey = "user:" + user.getId();
-            redisTemplate.opsForValue().set(userKey, user, 1, TimeUnit.HOURS);
-            log.debug("用户信息已保存到数据源 {} 的Redis中，键: {}", dataSourceName, userKey);
+        try {
+            RedisTemplate<String, Object> redisTemplate = DynamicDataSource.getInstance().getRedisTemplate(dataSourceName);
+            if (redisTemplate != null) {
+                String userKey = "user:" + user.getId();
+                redisTemplate.opsForValue().set(userKey, user, 1, TimeUnit.HOURS);
+                log.debug("用户信息已保存到数据源 {} 的Redis中，键: {}", dataSourceName, userKey);
+            }
+        } catch (Exception e) {
+            log.warn("将用户信息保存到数据源 {} 的Redis中时发生异常: {}", dataSourceName, e.getMessage(), e);
         }
     }
     

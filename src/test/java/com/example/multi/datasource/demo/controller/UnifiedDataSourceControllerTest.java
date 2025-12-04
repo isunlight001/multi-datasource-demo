@@ -55,8 +55,9 @@ public class UnifiedDataSourceControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Test User\",\"email\":\"test@example.com\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Test User"))
-                .andExpect(jsonPath("$.email").value("test@example.com"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.name").value("Test User"))
+                .andExpect(jsonPath("$.data.email").value("test@example.com"));
     }
 
     @Test
@@ -69,7 +70,8 @@ public class UnifiedDataSourceControllerTest {
         mockMvc.perform(get("/api/datasource/testDS/users")
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Test User"))
-                .andExpect(jsonPath("$[0].email").value("test@example.com"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].name").value("Test User"))
+                .andExpect(jsonPath("$.data[0].email").value("test@example.com"));
     }
 }
